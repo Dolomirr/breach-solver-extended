@@ -1,0 +1,26 @@
+# Venv
+.venv/
+
+# IDE settings
+.vscode/
+
+
+# linux trash
+.Trash-*
+
+# bite-compiled
+__pycache__/
+*.py[cod]
+*.so
+
+# uv
+uv.lock
+
+# ruff
+.ruff_cache/
+
+# dev
+build/
+
+# tests and temporary files
+**/_test*
