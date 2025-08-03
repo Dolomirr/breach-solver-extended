@@ -24,7 +24,7 @@ class ModelRunner:
 
     def _set_step_matrix(self):
         for i in range(self.context.n):
-            for j in range(self.context.n):
+            for j in range(self.context.m):
                 for t in range(self.context.buffer_size):
                     self.context.x[i, j, t] = self.context.model.addVar(vtype="B", name=f"x_{i}_{j}_{t}")
 
@@ -32,19 +32,19 @@ class ModelRunner:
         # one cell per step
         for t in range(self.context.buffer_size):
             self.context.model.addCons(
-                quicksum(self.context.x[i, j, t] for i in range(self.context.n) for j in range(self.context.n)) <= 1,
+                quicksum(self.context.x[i, j, t] for i in range(self.context.n) for j in range(self.context.m)) <= 1,
                 name=f"one_cell_per_step_{t}",
             )
 
         # continuous path
         for t in range(1, self.context.buffer_size):
-            prev_sum = quicksum(self.context.x[i, j, t - 1] for i in range(self.context.n) for j in range(self.context.n))
-            curr_sum = quicksum(self.context.x[i, j, t] for i in range(self.context.n) for j in range(self.context.n))
+            prev_sum = quicksum(self.context.x[i, j, t - 1] for i in range(self.context.n) for j in range(self.context.m))
+            curr_sum = quicksum(self.context.x[i, j, t] for i in range(self.context.n) for j in range(self.context.m))
             self.context.model.addCons(curr_sum <= prev_sum, name=f"continuous_path_{t}")
 
         # cell used at max one time
         for i in range(self.context.n):
-            for j in range(self.context.n):
+            for j in range(self.context.m):
                 self.context.model.addCons(
                     quicksum(self.context.x[i, j, t] for t in range(self.context.buffer_size)) <= 1,
                     name=f"cell_once_{i}_{j}",
@@ -54,7 +54,7 @@ class ModelRunner:
         self.context.used_buffer = quicksum(
             self.context.x[i, j, t]
             for i in range(self.context.n)
-            for j in range(self.context.n)
+            for j in range(self.context.m)
             for t in range(self.context.buffer_size)
         )
         self.context.model.addCons(self.context.used_buffer <= self.context.buffer_size, name="max_steps")
@@ -62,14 +62,14 @@ class ModelRunner:
         # start in first row
         for i in range(1, self.context.n):
             self.context.model.addCons(
-                quicksum(self.context.x[i, j, 0] for j in range(self.context.n)) == 0,
+                quicksum(self.context.x[i, j, 0] for j in range(self.context.m)) == 0,
                 name=f"start_in_first_row_{i}",
             )
 
         # row/col alteration
         for t in range(1, self.context.buffer_size):
             for i in range(self.context.n):
-                for j in range(self.context.n):
+                for j in range(self.context.m):
                     if t % 2 == 1:  # column
                         prev_col = quicksum(self.context.x[k, j, t - 1] for k in range(self.context.n))
                         self.context.model.addCons(
@@ -77,7 +77,7 @@ class ModelRunner:
                             name=f"move_rule_col_{i}_{j}_step_{t}",
                         )
                     else:  # row
-                        prev_row = quicksum(self.context.x[i, k, t - 1] for k in range(self.context.n))
+                        prev_row = quicksum(self.context.x[i, k, t - 1] for k in range(self.context.m))
                         self.context.model.addCons(
                             self.context.x[i, j, t] <= prev_row,
                             name=f"move_rule_row_{i}_{j}_step_{t}",
@@ -88,7 +88,7 @@ class ModelRunner:
             quicksum(
                 self.context.matrix[i][j] * self.context.x[i, j, t]
                 for i in range(self.context.n)
-                for j in range(self.context.n)
+                for j in range(self.context.m)
             )
             for t in range(self.context.buffer_size)
         ]

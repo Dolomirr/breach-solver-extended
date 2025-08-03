@@ -85,7 +85,7 @@ class TaskContext:
                 (i, j)
                 for t in range(self.buffer_size)
                 for i in range(self.n)
-                for j in range(self.n)
+                for j in range(self.m)
                 if self.model.getVal(self.x[i, j, t]) > 0.5
             ],
             dtype=np.int8,
