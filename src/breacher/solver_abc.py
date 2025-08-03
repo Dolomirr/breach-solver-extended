@@ -4,7 +4,7 @@ from typing import Self, TypeVar
 
 from core import SolverResult, Task
 
-from .solver_configs import SolverCode, SolverConfigType
+from .solvers_configs import SolverCode, SolverConfigType
 
 # ==========================================================================================
 # To add new solver type:

@@ -1,8 +1,8 @@
 from typing import Literal, overload
 
 from .solver_abc import Solver, existing_solvers
-from .solver_configs import SolverCode
 from .solvers import ScipSolver
+from .solvers_configs import SolverCode
 
 
 class GetSolver:

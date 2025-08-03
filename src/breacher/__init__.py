@@ -1,7 +1,7 @@
 # breacher/__init__.py
 
-from .solver_configs import ScipConfig, SolverCode
 from .solver_registry import GetSolver
+from .solvers_configs import ScipConfig, SolverCode
 
 __all__ = [
     "GetSolver",

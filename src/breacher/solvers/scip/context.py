@@ -6,7 +6,7 @@ from pyscipopt import Expr, Model, Variable
 
 from core import HexSymbol, Task
 
-from ...solver_configs import ScipConfig
+from ...solvers_configs import ScipConfig
 
 
 class TaskContext:

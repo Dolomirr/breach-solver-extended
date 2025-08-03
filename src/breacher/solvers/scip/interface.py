@@ -3,7 +3,7 @@ from time import perf_counter
 from core import NoSolution, Solution, SolverResult, Task
 
 from ...solver_abc import OptimizationError, Solver, register_solver
-from ...solver_configs import ScipConfig, SolverCode
+from ...solvers_configs import ScipConfig, SolverCode
 from .context import TaskContext
 from .extractor import ResultExtractor
 from .runner import ModelRunner
