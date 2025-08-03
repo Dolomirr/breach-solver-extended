@@ -2,16 +2,17 @@ from dataclasses import dataclass
 from functools import total_ordering
 from typing import Self
 
-from numpy import array_equal, dtype, int8, int64, issubdtype, ndarray, zeros
+import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
 from .task import Task
 
-type ArrayInt8 = ndarray[tuple[int, ...], dtype[int8]]
+type ArrayInt8 = np.ndarray[tuple[int, ...], np.dtype[np.int8]]
+type ArrayBool = np.ndarray[tuple[int, ...], np.dtype[np.bool]]
 type SolverResult = Solution | NoSolution
 
 
-@total_ordering     # TODO? check if affect performance
+@total_ordering
 @dataclass(frozen=True, slots=True)
 class Solution:
     """
@@ -19,16 +20,16 @@ class Solution:
     Supports full comparison set with other solutions by total points.
     Provide ``Solution.is_identical()`` method to check if two solutions are identical.
 
-    :param path: 2d array with shape (n, 2), and n>0, dtype int8.
-    :param buffer_sequence: 1d array, length must match the length of ``path``, dtype int8.
-    :param active_daemons: 1d array, dtype int8, each value of index ``i`` represent whether daemon at index ``i`` is active (1) or not (0).
-    :param total_points: Positive integer (int64).
+    :param path: 2d array with shape (n, 2), and n>0, np.dtype np.int8.
+    :param buffer_sequence: 1d array, length must match the length of ``path``, np.dtype np.int8.
+    :param active_daemons: 1d array, np.dtype np.int8, each value of index ``i`` represent whether daemon at index ``i`` is active (1) or not (0).
+    :param total_points: Positive integer (np.int64).
     """
 
     path: ArrayInt8
     buffer_sequence: ArrayInt8
-    active_daemons: ArrayInt8
-    total_points: int64
+    active_daemons: ArrayBool
+    total_points: np.int64
 
     def __post__init__(self) -> None:
         msg = []
@@ -38,19 +39,20 @@ class Solution:
             msg.append(f"buffer_sequence must be 1d and match path length, given: {self.buffer_sequence.shape}")
         if self.active_daemons.ndim != 1:
             msg.append(f"active_daemons must be 1d, given: {self.active_daemons.ndim}")
-        if not (issubdtype(self.total_points, int64) and self.total_points > 0):
+        if not (np.issubdtype(self.total_points, np.int64) and self.total_points > 0):
             msg.append(f"Total points must be a positive integer, given: {self.total_points}")
         if msg:
             msg = "\n" + "\n".join(msg)
             raise ValueError(msg)
 
     # TODO! widen down Exception
+    # TODO!: change names, add verification for already existing paths?, fix bool in active daemons
     @classmethod
     def build(cls, path: ArrayInt8, task: Task) -> SolverResult:
         """
         Creates instance of ``SolverResult`` from path (minimal needed information to reconstruct a solution) and valid `Task` instance fields.
         
-        :param path: 2d array with shape (n, 2), and n>0, dtype int8.
+        :param path: 2d array with shape (n, 2), and n>0, np.dtype np.int8.
         :param task: ``Task`` instance.
         :return: ``Solution`` or ``NoSolution`` if no solution for given path and Task exist.
         """
@@ -58,35 +60,35 @@ class Solution:
             return NoSolution(reason="Invalid or empty path")
 
         try:
-            try:
-                buffer_size = task.buffer_size
-                buffer = zeros(buffer_size, dtype=int8)
-                buffer[: path.shape[0]] = task.matrix[path[:, 0], path[:, 1]]
-                buffer_sequence = buffer[: path.shape[0]]
-            except Exception as e:  # noqa: BLE001
-                return NoSolution(reason=f"Failed to construct buffer_sequence: \n{e!r}")
+            buffer_size = task.buffer_size
+            buffer = np.zeros(buffer_size, dtype=np.int8)
+            buffer[: path.shape[0]] = task.matrix[path[:, 0], path[:, 1]]
+            buffer_sequence = buffer[: path.shape[0]]
+        except Exception as e:  # noqa: BLE001
+            return NoSolution(reason=f"Failed to construct buffer_sequence: \n{e!r}")
 
-            try:
-                daemons = task.daemons
-                num_daemons = len(daemons)
-                active_daemons = zeros(num_daemons, dtype=bool)
+        try:
+            daemons = task.daemons
+            num_daemons = len(daemons)
+            active_daemons = np.zeros(num_daemons, dtype=bool)
 
-                for i in range(num_daemons):
-                    d = daemons[i]
-                    d_len = d.shape[0]
-                    if d_len > buffer_sequence.shape[0]:
-                        continue
-                    windows = sliding_window_view(buffer_sequence, window_shape=d_len)
-                    if (windows == d).all(axis=1).any():
-                        active_daemons[i] = True
-            except Exception as e:  # noqa: BLE001
-                return NoSolution(f"Failed to construct active_demons: \n{e!r}")
+            for i in range(num_daemons):
+                d = daemons[i]
+                d_len = d.shape[0]
+                if d_len > buffer_sequence.shape[0]:
+                    continue
+                windows = sliding_window_view(buffer_sequence, window_shape=d_len)
+                if (windows == d).all(axis=1).any():
+                    active_daemons[i] = True
+        except Exception as e:  # noqa: BLE001
+            return NoSolution(f"Failed to construct active_demons: \n{e!r}")
 
-            try:
-                total_points = int64(task.daemons_costs @ active_daemons)
-            except Exception as e:  # noqa: BLE001
-                return NoSolution(f"Failed to compute total_points: \n{e!r}")
-
+        try:
+            total_points = np.int64(task.daemons_costs @ active_daemons)
+        except Exception as e:  # noqa: BLE001
+            return NoSolution(f"Failed to compute total_points: \n{e!r}")
+        
+        try:
             return cls(
                 path=path,
                 buffer_sequence=buffer_sequence,
@@ -94,7 +96,7 @@ class Solution:
                 total_points=total_points,
             )
         except Exception as e:  # noqa: BLE001
-            return NoSolution(f"Unexpected error during Solution.build: \n{e!r}")
+            return NoSolution(f"Error while construction Solution: \n{e!r}")
 
     def __copy__(self) -> Self:
         cls = type(self)
@@ -137,9 +139,9 @@ class Solution:
         if not isinstance(other, Solution):
             return False
         return (
-            array_equal(self.path, other.path)
-            and array_equal(self.buffer_sequence, other.buffer_sequence)
-            and array_equal(self.active_daemons, other.active_daemons)
+            np.array_equal(self.path, other.path)
+            and np.array_equal(self.buffer_sequence, other.buffer_sequence)
+            and np.array_equal(self.active_daemons, other.active_daemons)
             and self.total_points == other.total_points
         )
 
