@@ -19,7 +19,7 @@ class ResultExtractor:
         self.context = context
 
     def _require_finished(self):
-        if not getattr(self, "is_finished", False):
+        if not self.context.is_finished:
             msg = "requires ModelRunner.optimize() to complete first"
             raise RuntimeError(msg)
 
