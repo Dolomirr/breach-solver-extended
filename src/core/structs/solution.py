@@ -89,7 +89,7 @@ class Solution:
             buffer = np.zeros(buffer_size, dtype=np.int8)
             buffer[: path.shape[0]] = task.matrix[path[:, 0], path[:, 1]]
             buffer_sequence = buffer[: path.shape[0]]
-        except Exception as e:  # noqa: BLE001
+        except (IndexError, TypeError) as e:
             return NoSolution(reason=f"Failed to construct buffer_sequence: \n{e!r}")
 
         try:
@@ -105,12 +105,12 @@ class Solution:
                 windows = sliding_window_view(buffer_sequence, window_shape=d_len)
                 if (windows == d).all(axis=1).any():
                     active_daemons[i] = True
-        except Exception as e:  # noqa: BLE001
+        except (ValueError, TypeError, IndexError) as e:
             return NoSolution(f"Failed to construct active_demons: \n{e!r}")
 
         try:
             total_points = np.int64(task.daemons_costs @ active_daemons)
-        except Exception as e:  # noqa: BLE001
+        except (ValueError, TypeError) as e:
             return NoSolution(f"Failed to compute total_points: \n{e!r}")
         
         try:
@@ -120,7 +120,7 @@ class Solution:
                 active_daemons=active_daemons,
                 total_points=total_points,
             )
-        except Exception as e:  # noqa: BLE001
+        except (ValueError, TypeError) as e:
             return NoSolution(f"Error while construction Solution: \n{e!r}")
 
     def __copy__(self) -> Self:
