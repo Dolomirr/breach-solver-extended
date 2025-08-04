@@ -17,19 +17,31 @@ type SolverResult = Solution | NoSolution
 class Solution:
     """
     Represents single valid solution for breach protocol.
-    Supports full comparison set with other solutions by total points.
-    Provide ``Solution.is_identical()`` method to check if two solutions are identical.
+    Supports full comparison and ordering by ``total_points`` set with other solutions by total points.
+    Suppers hashing.
+    
+    Methods
+    -------
+        is_identical
+            Comparison by all attributes.
+        from_task
+            Allow to reconstruct full solution from only path, and corresponding ``Task``.
 
-    :param path: 2d array with shape (n, 2), and n>0, np.dtype np.int8.
-    :param buffer_sequence: 1d array, length must match the length of ``path``, np.dtype np.int8.
-    :param active_daemons: 1d array, np.dtype np.int8, each value of index ``i`` represent whether daemon at index ``i`` is active (1) or not (0).
-    :param total_points: Positive integer (np.int64).
+    :param path: 2d array with shape (n, 2), represents sequentially picked cells on matrix, each pair is coordinates of cell.
+    :type path: np.ndarray[tuple[int, int], np.dtype[np.int8]]
+    :param buffer_sequence: 1d array, represents symbols picked from matrix, corresponds to path, therefore length must match the length of ``path``.
+    :type buffer_sequence: np.ndarray[tuple[int], np.dtype[np.int8]]
+    :param active_daemons: 1d array, each value indicates whether corresponding daemon active.
+    :type active_daemons: np.ndarray[tuple[int], np.dtype[np.bool]]
+    :param total_points: Sum of pits earned by activating daemons, must be positive.
+    :type total_points: np.int64
+
     """
 
     path: ArrayInt8
     buffer_sequence: ArrayInt8
     active_daemons: ArrayBool
-    total_points: np.int64
+    total_points: np.int64  # left signed to avoid casting in cpp modules
 
     def __post__init__(self) -> None:
         msg: list[str] = []
@@ -48,14 +60,14 @@ class Solution:
     # TODO! widen down Exception
     # TODO!: change names, add verification for already existing paths?
     @classmethod
-    def build(cls, path: ArrayInt8, task: Task) -> SolverResult:
+    def from_task(cls, path: ArrayInt8, task: Task) -> SolverResult:
         """
-        Creates instance of ``SolverResult`` from path (minimal needed information to reconstruct a solution) and valid `Task` instance fields.
+        Creates instance of ``SolverResult`` from path (minimal needed information to reconstruct a solution) and valid ``Task`` instance fields.
         
-        :param path: 2d array with shape (n, 2), and n>0, np.dtype np.int8.
+        :param path: Must be valid for norma Solution constructor.
         :param task: ``Task`` instance.
         :return: ``Solution`` or ``NoSolution`` if no solution for given path and Task exist.
-        :raises: ValueError if provided path have incorrect shape or type.
+        :raises: ``ValueError`` if provided path have incorrect shape or type.
         """
         msg: list[str] = []
         if not isinstance(path, np.ndarray):
@@ -144,13 +156,12 @@ class Solution:
 
     def is_identical(self, other: object) -> bool:
         """
-        Checks if this solution is identical to the given object.
-
-        :param other: Object to compare with.
-        :return: True if the objects are identical, False otherwise or if `other` is not instance of `Solution`.
+        Checks if the current object is identical to another ``Task`` object.
+        
+        :return: True if tasks are identical, False otherwise, NotImplemented if ``other`` is not a ``Solution`` object.
         """
         if not isinstance(other, Solution):
-            return False
+            return NotImplemented
         return (
             np.array_equal(self.path, other.path)
             and np.array_equal(self.buffer_sequence, other.buffer_sequence)
@@ -162,8 +173,10 @@ class Solution:
 @dataclass
 class NoSolution:
     """
-    indicates that no valid solution exist or could bew found.
+    Indicates that no valid solution exist or could bew found.
+    
     :param reason: The reason for the absence of a solution.
+    :type reason: str
     """
 
     reason: str

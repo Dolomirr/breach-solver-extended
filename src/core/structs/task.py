@@ -12,14 +12,28 @@ type ArrayInt8 = np.ndarray[tuple[int, ...], np.dtype[np.int8]]
 class Task:
     """
     Represents single valid task for breach protocol.
+    
+    Support hashing and equality checks.
+    
+    Methods
+    -------
+        copy
+            Shortcut to __copy__().
+        is_identical
+            Comparison with other Task.
 
-    :param matrix: 2d np.ndarray of np.dtype np.int8
-    :param daemons: 2d np.ndarray of np.dtype np.int8
-    :param daemons_costs: 1d np.ndarray of np.dtype np.int8
+    :param matrix: rectangular 2d np.ndarray, each element represents hex symbol, according to ``HexSymbol``.
+    :type matrix: np.ndarray[tuple[int, int8], np.dtype[np.int8]]
+    :param daemons: rectangular 2d np.ndarray, each element represents daemon symbol, according to ``HexSymbol``,
+        for shorter daemons sequences are padded with ``HexSymbol.S_STOP`` == -1.
+    :type daemons: np.ndarray[tuple[int, int8], np.dtype[np.int8]]
+    :param daemons_costs: 1d np.ndarray each represents cost in points of corresponding daemon.
+    :type daemons_costs: np.ndarray[tuple[int], np.dtype[np.int8]]
     :param buffer_size: np.int8
+    :type buffer_size: np.int8
+
     """
 
-    # seems like pyright does not fully support new numpy's annotation
     matrix: ArrayInt8
     daemons: ArrayInt8
     daemons_costs: ArrayInt8
@@ -67,7 +81,12 @@ class Task:
             ),
         )
 
-    def __eq__(self, other: object) -> bool:
+    def is_identical(self, other: object) -> bool:
+        """
+        Checks if the current object is identical to another ``Task`` object.
+        
+        :return: True if tasks are identical, False otherwise, NotImplemented if ``other`` is not a ``Task`` object.
+        """
         if not isinstance(other, Task):
             return NotImplemented
         return (
