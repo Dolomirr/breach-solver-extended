@@ -26,7 +26,7 @@ class Task:
     buffer_size: np.int8
 
     def __post_init__(self) -> None:
-        msg = []
+        msg: list[str] = []
         if not np.issubdtype(self.matrix.dtype, np.int8):
             msg.append(f"matrix must be of np.dtype numpy.np.int8, given: {self.matrix.dtype}")
         if self.matrix.ndim != 2:
@@ -42,9 +42,9 @@ class Task:
                 f"buffer size must be np.int8 and non-negative, given: {type(self.buffer_size)}, {self.buffer_size}",
             )
         if msg:
-            msg = "\n" + "\n".join(msg)
-            raise ValueError(msg)
-    
+            msgs = "\n" + "\n".join(msg)
+            raise ValueError(msgs)
+
     def __copy__(self) -> Self:
         cls = type(self)
         return cls(

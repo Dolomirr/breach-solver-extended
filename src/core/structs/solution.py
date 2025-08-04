@@ -32,7 +32,7 @@ class Solution:
     total_points: np.int64
 
     def __post__init__(self) -> None:
-        msg = []
+        msg: list[str] = []
         if self.path.ndim != 2 or self.path.shape[0] == 0 or self.path.shape[1] != 2:
             msg.append(f"Path must be a 2D array with shape (n, 2), and n>0, given: {self.path.shape}")
         if self.buffer_sequence.ndim != 1 or self.buffer_sequence.shape[0] != self.path.shape[0]:
@@ -42,11 +42,11 @@ class Solution:
         if not (np.issubdtype(self.total_points, np.int64) and self.total_points > 0):
             msg.append(f"Total points must be a positive integer, given: {self.total_points}")
         if msg:
-            msg = "\n" + "\n".join(msg)
-            raise ValueError(msg)
+            msgs = "\n" + "\n".join(msg)
+            raise ValueError(msgs)
 
     # TODO! widen down Exception
-    # TODO!: change names, add verification for already existing paths?, fix bool in active daemons
+    # TODO!: change names, add verification for already existing paths?
     @classmethod
     def build(cls, path: ArrayInt8, task: Task) -> SolverResult:
         """
@@ -55,9 +55,22 @@ class Solution:
         :param path: 2d array with shape (n, 2), and n>0, np.dtype np.int8.
         :param task: ``Task`` instance.
         :return: ``Solution`` or ``NoSolution`` if no solution for given path and Task exist.
+        :raises: ValueError if provided path have incorrect shape or type.
         """
-        if path is None or path.size == 0:
-            return NoSolution(reason="Invalid or empty path")
+        msg: list[str] = []
+        if not isinstance(path, np.ndarray):
+            msg.append(f"Path must be a numpy array, given: {type(path)}\n")
+        else:
+            if path.ndim != 2:
+                msg.append(f"Path must be a 2d array, given: {path.ndim}")
+            if path.shape[1] != 2:
+                msg.append(f"path must have shape (n, 2), given: {path.shape}")
+        if msg:
+            msgs = "\n" + "\n".join(msg)
+            raise ValueError(msgs)
+        
+        if path.shape[0] == 0:
+            return NoSolution("Received empty path.")
 
         try:
             buffer_size = task.buffer_size

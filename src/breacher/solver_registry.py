@@ -9,10 +9,11 @@ class GetSolver:
     """
     Allow to get Solver subclass instance by code.
     
-    Provide such methods:
-        - ``GetSolver.single()`` to retrieve single instance of specific subclass (recommended due to typecasting)
-        - ``GetSolver.multiple()`` to create dict with instances of multiple subclasses.
-        - ``GetSolver.all()`` to create dict with instances of all existing subclasses.
+    Methods
+    -------
+        single: to retrieve single instance of specific subclass (recommended due to typecasting)
+        multiple: to create dict with instances of multiple subclasses.
+        all: to create dict with instances of all existing subclasses.
     
     """
     
