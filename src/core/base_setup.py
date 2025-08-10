@@ -1,4 +1,5 @@
 from enum import IntEnum
+from pathlib import Path
 
 __all__ = [
     "DISPLAY_TO_HEX",
@@ -63,3 +64,7 @@ DISPLAY_TO_HEX: dict[str, HexSymbol] = {v: k for k, v in HEX_DISPLAY_MAP.items()
 
 mapper_to_str = HEX_DISPLAY_MAP.__getitem__
 mapper_to_int = DISPLAY_TO_HEX.__getitem__
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+"""Main folder 'breach-solver-extended' with src in it."""

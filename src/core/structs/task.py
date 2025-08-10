@@ -1,7 +1,12 @@
+import logging
 from dataclasses import dataclass
 from typing import Self
 
 import numpy as np
+
+from core import setup_logging
+
+log = logging.getLogger(__name__)
 
 # seems like pyright does not fully support new numpy's annotation
 # so i cant specify dimensions :/
@@ -12,9 +17,9 @@ type ArrayInt8 = np.ndarray[tuple[int, ...], np.dtype[np.int8]]
 class Task:
     """
     Represents single valid task for breach protocol.
-    
+
     Support hashing and equality checks.
-    
+
     Methods
     -------
         copy
@@ -57,7 +62,10 @@ class Task:
             )
         if msg:
             msgs = "\n" + "\n".join(msg)
+            log.exception('Creating Task failed', extra={'reason': msg })
             raise ValueError(msgs)
+        log.info("Successfully created Task")
+        log.debug("Task:", extra={"solution": self})
 
     def __copy__(self) -> Self:
         cls = type(self)
@@ -84,7 +92,7 @@ class Task:
     def is_identical(self, other: object) -> bool:
         """
         Checks if the current object is identical to another ``Task`` object.
-        
+
         :return: True if tasks are identical, False otherwise, NotImplemented if ``other`` is not a ``Task`` object.
         """
         if not isinstance(other, Task):

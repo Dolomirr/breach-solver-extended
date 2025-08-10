@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from functools import total_ordering
 from typing import Self
@@ -5,11 +6,17 @@ from typing import Self
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
 
+from core import setup_logging
+
 from .task import Task
 
 type ArrayInt8 = np.ndarray[tuple[int, ...], np.dtype[np.int8]]
 type ArrayBool = np.ndarray[tuple[int, ...], np.dtype[np.bool]]
 type SolverResult = Solution | NoSolution
+
+
+setup_logging()
+log = logging.getLogger(__name__)
 
 
 @total_ordering
@@ -19,7 +26,7 @@ class Solution:
     Represents single valid solution for breach protocol.
     Supports full comparison and ordering by ``total_points`` set with other solutions by total points.
     Suppers hashing.
-    
+
     Methods
     -------
         is_identical
@@ -55,7 +62,10 @@ class Solution:
             msg.append(f"Total points must be a positive integer, given: {self.total_points}")
         if msg:
             msgs = "\n" + "\n".join(msg)
+            log.exception("Creating Solution failed", extra={"reason": msg})
             raise ValueError(msgs)
+        log.info("Successfully created Solution")
+        log.debug("Solution:", extra={"solution": self})
 
     # TODO! widen down Exception
     # TODO!: change names, add verification for already existing paths?
@@ -63,7 +73,7 @@ class Solution:
     def from_task(cls, path: ArrayInt8, task: Task) -> SolverResult:
         """
         Creates instance of ``SolverResult`` from path (minimal needed information to reconstruct a solution) and valid ``Task`` instance fields.
-        
+
         :param path: Must be valid for norma Solution constructor.
         :param task: ``Task`` instance.
         :return: ``Solution`` or ``NoSolution`` if no solution for given path and Task exist.
@@ -80,7 +90,7 @@ class Solution:
         if msg:
             msgs = "\n" + "\n".join(msg)
             raise ValueError(msgs)
-        
+
         if path.shape[0] == 0:
             return NoSolution("Received empty path.")
 
@@ -112,7 +122,7 @@ class Solution:
             total_points = np.int64(task.daemons_costs @ active_daemons)
         except (ValueError, TypeError) as e:
             return NoSolution(f"Failed to compute total_points: \n{e!r}")
-        
+
         try:
             return cls(
                 path=path,
@@ -157,7 +167,7 @@ class Solution:
     def is_identical(self, other: object) -> bool:
         """
         Checks if the current object is identical to another ``Task`` object.
-        
+
         :return: True if tasks are identical, False otherwise, NotImplemented if ``other`` is not a ``Solution`` object.
         """
         if not isinstance(other, Solution):
@@ -174,9 +184,12 @@ class Solution:
 class NoSolution:
     """
     Indicates that no valid solution exist or could bew found.
-    
+
     :param reason: The reason for the absence of a solution.
     :type reason: str
     """
 
     reason: str
+
+    def __post_init__(self):
+        log.info("NoSolution created", extra={"reason": self.reason})

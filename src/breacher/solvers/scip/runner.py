@@ -38,7 +38,7 @@ class ModelRunner:
     @cached_property
     def _x_matrix_shape(self) -> tuple[int, int, int]:
         """
-        3 commy used throughout the methods for ranges values, representing the dimensions of x (n, m, buffer_size) matrix.
+        3 common used throughout the methods for ranges values, representing the dimensions of x (n, m, buffer_size) matrix.
             - n: amount of rows
             - m: length of each row
             - buffer_size: (or 'step') - amount of available steps and buffer size

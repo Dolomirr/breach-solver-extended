@@ -24,3 +24,7 @@ build/
 
 # tests and temporary files
 **/_test*
+
+# logs
+logs/
+**/*.log
