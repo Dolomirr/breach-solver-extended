@@ -5,11 +5,12 @@ from typing import Literal
 
 from .base_setup import PROJECT_ROOT
 
-# import logging
-# from core import setup_logging
-# setup_logging()
-# log = logging.getLogger(__name__)
-
+'''
+import logging
+from core import setup_logging
+setup_logging()
+log = logging.getLogger(__name__)
+'''
 
 class LogsFormatter(logging.Formatter):
     def __init__(

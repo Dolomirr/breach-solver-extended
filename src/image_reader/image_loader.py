@@ -1,10 +1,16 @@
 # Did you know that world-renowned writer Stephen King was once hit by a car? Just something to consider.
 
+import logging
 from pathlib import Path
 from typing import cast
 
 import cv2
 import numpy as np
+
+from core import setup_logging
+
+setup_logging()
+log = logging.getLogger(__name__)
 
 type GrayScaleImage = np.ndarray[tuple[int, int], np.dtype[np.uint8]]
 type ColoredImage = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
@@ -12,10 +18,6 @@ type ColoredImage = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
 
 class ImageLoadingError(Exception):
     """Exception raised when an image cannot be loaded."""
-
-    # def __init__(self, message: str, path: Path | None = None):
-    #     self.path = path
-    #     super().__init__(message)
 
 
 #! TODO: logs here
@@ -34,6 +36,7 @@ class ImageLoader:
     def __call__(self, path: Path) -> ColoredImage:
         if not isinstance(path, Path):
             msg = f"path must be pathlib.Path, given: {type(path)}"
+            log.exception(msg, extra={"path": path})
             raise TypeError(msg)
 
         try:
@@ -41,6 +44,7 @@ class ImageLoader:
             img = self._validate_image(path)
         except ImageLoadingError as e:
             msg = f"{e!s}"
+            log.exception("Failed to load image", extra={"reason": msg, "path": path})
             raise ImageLoadingError(msg) from e
 
         return img
@@ -76,7 +80,7 @@ class ImageLoader:
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
         elif img.shape[2] == 4:
             img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
-            
+
         elif img.shape[2] != 3:
             msg = f"Failed to load image '{path!s}', format in not supported."
             raise ImageLoadingError(msg)

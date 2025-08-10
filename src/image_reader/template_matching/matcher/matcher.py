@@ -1,11 +1,17 @@
+import logging
+
 import cv2
 import numpy as np
 
+from core import setup_logging
 from image_reader.image_loader import GrayScaleImage
 
 from ..structs import Images, TemplateProcessingConfig
 from ..template_loader import AdditionalTemplate, BufferTemplate, SymbolTemplate, TemplateDict
 from .match_struct import BBox, Center, Match
+
+setup_logging()
+log = logging.getLogger(__name__)
 
 
 class TemplateMatcher:
@@ -17,7 +23,6 @@ class TemplateMatcher:
         image: GrayScaleImage,
         templates: TemplateDict[SymbolTemplate | BufferTemplate | AdditionalTemplate],
     ) -> list[Match]:
-        
         raw: list[tuple[int, int, int, int, float, str, int]] = []  # [(x, y, w, h, score, label, template_idx), ...]
         for label, tmpl_list in templates.items():
             for idx, tmpl in enumerate(tmpl_list):
@@ -63,4 +68,5 @@ class TemplateMatcher:
                 ),
             )
 
+        log.debug("Template matching", extra={"found": len(matches)})
         return matches

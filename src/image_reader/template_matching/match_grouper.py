@@ -1,11 +1,17 @@
+import logging
 from ast import Raise
 from collections import defaultdict, deque
 from typing import Literal, Self, cast
 
 import numpy as np
 
+from core import setup_logging
+
 from .matcher import Match
 from .structs import TemplateProcessingConfig
+
+setup_logging()
+log = logging.getLogger(__name__)
 
 type Array1DIndices = np.ndarray[tuple[int], np.dtype[np.integer]]
 
@@ -23,9 +29,7 @@ class MatchGrouper:
         self.matches = matches.copy()
         self.config = config
 
-    def filter_unclustered(
-        self,
-    ) -> Self:
+    def filter_unclustered(self) -> Self:
         """
         Filters out points not belonging to any cluster (matrix/sequences) with simple DBSCAN.
 
@@ -40,6 +44,8 @@ class MatchGrouper:
         :param min_samples: minimum cluster population.
         :returns: filtered list of Match belonging to clusters.
         """
+        len_before = len(self.matches)
+
         epsilon = (
             self.config.CLUSTERING_EPS
             if self.config.CLUSTERING_EPS is not None
@@ -92,6 +98,7 @@ class MatchGrouper:
                             queue.append(k)
 
         self.matches = [match for i, match in enumerate(self.matches) if labels[i] > 0]
+        log.debug("Filter on clustered:", extra={"before": len_before, "after": len(self.matches)})
         return self
 
     def _get_centers(self, matches: list[Match]) -> tuple[Array1DIndices, Array1DIndices]:
@@ -154,10 +161,12 @@ class MatchGrouper:
             raise RuntimeError(msg)
 
         gaps_indices = np.argsort(diffs)[::-1]
+        gaps_midpoints = (centers[gaps_indices] + centers[gaps_indices + np.intp(1)]) // 2
 
+        log.debug("Gaps found", extra={"gaps_midpoints": gaps_midpoints})
         return cast(
             "np.ndarray[tuple[int], np.dtype[np.signedinteger]]",
-            (centers[gaps_indices] + centers[gaps_indices + np.intp(1)]) // 2,
+            gaps_midpoints,
         )
 
     def set_splitted(self) -> Self:
@@ -175,6 +184,7 @@ class MatchGrouper:
         right = [m for m in self.matches if m.center.cx >= split_x]
 
         self._matches_matrix_flat, self._matches_daemons_flat = left, right
+        log.debug("Spited matches", extra={"matrix": len(left), "daemons": len(right)})
         return self
 
     def structure_matrix(self) -> Self:  # noqa: PLR0915
@@ -187,6 +197,7 @@ class MatchGrouper:
         """
         if not self._matches_matrix_flat:
             self.matches_matrix = [[]]
+            log.warning("No matrix matches found")
             return self
 
         tolerance = (
@@ -222,7 +233,7 @@ class MatchGrouper:
         col_centers = [np.median(cluster).astype(np.int64) for cluster in col_clusters]
         col_centers.sort()
 
-        grid: list[list[Match| None]] = [[None] * len(col_centers) for _ in range(len(row_centers))]
+        grid: list[list[Match | None]] = [[None] * len(col_centers) for _ in range(len(row_centers))]
         for sym_match in self._matches_matrix_flat:
             min_col_dist = np.inf
             best_col_idx = -1
@@ -257,9 +268,17 @@ class MatchGrouper:
 
         if any(None in row for row in grid) is None:
             msg = "Some of grid cell was not replaced."
+            log.exception(msg)
             raise RuntimeError(msg)
-        
+
         self.matches_matrix = cast("list[list[Match]]", grid)
+        log.debug(
+            "Structured/filtering on matrix",
+            extra={
+                "before": len(self._matches_matrix_flat),
+                "after": sum(len(row) for row in grid),
+            },
+        )
         return self
 
     def structure_daemons(self) -> Self:
@@ -271,6 +290,7 @@ class MatchGrouper:
         """
         if not self._matches_daemons_flat:
             self.matches_daemons = [[]]
+            log.warning("No daemons matches found")
             return self
 
         tolerance = (self._matches_daemons_flat[0].bbox[2] - self._matches_daemons_flat[0].bbox[0]) // 2
@@ -303,6 +323,7 @@ class MatchGrouper:
 
         if not starts_x:
             self.matches_daemons = [[]]
+            log.warning("No daemons matches found")
             return self
 
         # can we assume no invalid matches will be on the left side?
@@ -336,6 +357,13 @@ class MatchGrouper:
         valid_sequences.sort(key=lambda row: min(m.center[1] for m in row))
 
         self.matches_daemons = valid_sequences
+        log.debug(
+            "Structured/filtering on matrix",
+            extra={
+                "before": len(self._matches_daemons_flat),
+                "after": sum(len(row) for row in valid_sequences),
+            },
+        )
         return self
 
     def find_buffer_bounds(self) -> tuple[int, int]:
@@ -344,9 +372,10 @@ class MatchGrouper:
                 in (self.matches_matrix + self.matches_daemons)
                     for item in sublist
             ]  # fmt: skip
-        
+
         centers_filtered_x, _ = self._get_centers(matches_after_filtering)
         gap_filtered = self._find_gaps(centers_filtered_x)[0]
         upper_filtered = max(m.center.cy for m in matches_after_filtering)
 
+        log.debug('Located buffer bounds.', extra={'vert_bound': gap_filtered, 'hor_bound': upper_filtered })
         return gap_filtered, upper_filtered

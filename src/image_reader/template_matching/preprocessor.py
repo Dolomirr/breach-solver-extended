@@ -1,10 +1,16 @@
-from typing import TYPE_CHECKING, Self, cast
+import logging
+from typing import Self, cast
 
 import cv2
 import numpy as np
 
+from core import setup_logging
+
 from ..image_loader import ColoredImage, GrayScaleImage
 from .structs import Images, TemplateProcessingConfig
+
+setup_logging()
+log = logging.getLogger(__name__)
 
 
 class ImageProcessor:
@@ -62,7 +68,7 @@ class ImageProcessor:
         padded[y_offset : y_offset + new_h, x_offset : x_offset + new_w] = resized
 
         self.images.sized = padded
-
+        log.debug("Resized set.", extra={"target_size": self.config.TARGET_SIZE})
         return self
 
     def set_grayed(self) -> Self:
@@ -72,10 +78,10 @@ class ImageProcessor:
         """
         # safe, due to dtype check in image_loader.ImageReader
         self.images.gray = cast("GrayScaleImage", cv2.cvtColor(self.images.sized, cv2.COLOR_BGR2GRAY))
+        log.debug("Grayed set.")
         return self
 
     def set_binary(self) -> Self:
-        # TODO: log on val
         val, img_binary = cv2.threshold(
             self.images.gray,
             self.config.MINVAL_THRESHOLD,
@@ -84,6 +90,7 @@ class ImageProcessor:
         )
         # safe, due to dtype check in image_loader.ImageReader
         self.images.binary = cast("GrayScaleImage", img_binary)
+        log.debug("Binary set.", extra={"val": val})
         return self
 
     def set_buffer(self, vert_bound, hor_bound) -> Self:
@@ -91,6 +98,7 @@ class ImageProcessor:
         upper, _ = self._split_in(self.images.gray, hor_bound, axis=0)
 
         self.images.buffer_cut = upper
+        log.debug("Buffer cutter.", extra={"hor_bound": hor_bound, "vert_bound": vert_bound})
         return self
 
     def set_buffer_binary(self) -> Self:
@@ -111,4 +119,5 @@ class ImageProcessor:
         )
 
         self.images.buffer_binary = cast("GrayScaleImage", buffer_thresh)
+        log.debug("Buffer binary set.", extra={"block_size": thres_block_size})
         return self

@@ -1,4 +1,7 @@
+import logging
 from pathlib import Path
+
+from core import setup_logging
 
 from ..image_loader import ColoredImage
 from ..reader_abc import ImageReader
@@ -7,6 +10,9 @@ from .matcher import TemplateMatcher
 from .preprocessor import ImageProcessor
 from .structs import Images, TemplateProcessingConfig
 from .template_loader import TemplateLoader
+
+setup_logging()
+log = logging.getLogger(__name__)
 
 
 class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
@@ -21,6 +27,8 @@ class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
         self.templates = TemplateLoader(self.config)
         self.matcher = TemplateMatcher(self.config)
 
+        log.debug("Initializing ScannerTemplates", extra={"config": config})
+
     def read(self, image: ColoredImage):
         self.images = Images(image)
         self.img_manager.set_base(self.images)
@@ -31,13 +39,16 @@ class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
             .set_binary()
         )  # fmt: skip
 
+        # TODO?: quick return if None here?
         self.templates.load()
-        buffer_matches = self.matcher.match(
+        
+        log.debug('Matching symbols')
+        symbols_matches = self.matcher.match(
             self.images.binary,
             self.templates.symbols,
-        )  # TODO: quick return if None here
+        )
 
-        self.grouper = MatchGrouper(buffer_matches, self.config)
+        self.grouper = MatchGrouper(symbols_matches, self.config)
 
         (
             self.grouper
@@ -55,6 +66,7 @@ class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
             .set_buffer_binary()
         )  # fmt: skip
 
+        log.debug('Matched buffer')
         buffer_matches = self.matcher.match(
             self.images.buffer_binary,
             self.templates.buffer,
