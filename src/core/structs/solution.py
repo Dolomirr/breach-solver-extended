@@ -18,6 +18,8 @@ type SolverResult = Solution | NoSolution
 setup_logging()
 log = logging.getLogger(__name__)
 
+from icecream import ic  # noqa: PLC0415
+
 
 @total_ordering
 @dataclass(frozen=True, slots=True)
@@ -50,13 +52,15 @@ class Solution:
     active_daemons: ArrayBool
     total_points: np.int64  # left signed to avoid casting in cpp modules
 
-    def __post__init__(self) -> None:
+    def __post_init__(self) -> None:
         msg: list[str] = []
         if self.path.ndim != 2 or self.path.shape[0] == 0 or self.path.shape[1] != 2:
             msg.append(f"Path must be a 2D array with shape (n, 2), and n>0, given: {self.path.shape}")
-        if self.buffer_sequence.ndim != 1 or self.buffer_sequence.shape[0] != self.path.shape[0]:
-            msg.append(f"buffer_sequence must be 1d and match path length, given: {self.buffer_sequence.shape}")
+        if self.buffer_sequence.ndim != 1 or self.buffer_sequence.shape[0] < self.path.shape[0]:
+            ic(self.path.shape[0])
+            msg.append(f"buffer_sequence must be 1d and match path length, given: {self.buffer_sequence.shape} instead of {self.path.shape}")
         if self.active_daemons.ndim != 1:
+            ic(self.active_daemons.ndim)
             msg.append(f"active_daemons must be 1d, given: {self.active_daemons.ndim}")
         if not (np.issubdtype(self.total_points, np.int64) and self.total_points > 0):
             msg.append(f"Total points must be a positive integer, given: {self.total_points}")
@@ -67,7 +71,7 @@ class Solution:
         log.info("Successfully created Solution")
         log.debug("Solution:", extra={"solution": self})
 
-    # TODO! widen down Exception
+
     # TODO!: change names, add verification for already existing paths?
     @classmethod
     def from_task(cls, path: ArrayInt8, task: Task) -> SolverResult:

@@ -75,4 +75,4 @@ class ResultExtractor:
         :return: sum of points for each activated daemon.
         """
         self._require_finished()
-        return np.dot(self.context.daemons_costs, self.active_daemons)
+        return np.int64(np.dot(self.context.daemons_costs, self.active_daemons))
