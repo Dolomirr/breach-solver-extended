@@ -13,16 +13,26 @@ class TaskContext:
     """
     A class representing the context of a task in a breach protocol.
 
-    Attributes:
-        y: (list[str]): A list of scip.Variable labels each variable indicates whether daemon i is activated.
-        z: (list[dict[int, Variable]]): Contains position where each daemon can start and whether this starting position is valid.
-        buffer_seq: (list[Expr]): Value expression with number chosen in corresponding buffer sequence.
-        used_buffer: (Expr): TNumber of filled buffer slots.
-        n: (cached_property): Returns the number of rows in the ``x`` matrix.
-        m: (cached_property): Returns the length of each row in the ``x`` matrix.
-        d_count: (cached_property): Returns the number of daemons in the task.
-        d_lengths: (cached_property): Returns the lengths of daemons after 'stripping from padding with ``HexSymbol.S_STOP``'.
-        unused_cell_reward: (cached_property): Calculates the reward per unused buffer slot.
+    Attributes
+    ----------
+        y: list[str]
+            A list of scip.Variable labels each variable indicates whether daemon i is activated.
+        z: list[dict[int, Variable]]
+            Contains position where each daemon can start and whether this starting position is valid.
+        buffer_seq: list[Expr]
+            Value expression with number chosen in corresponding buffer sequence.
+        used_buffer: Expr
+            Number of filled buffer slots.
+        n: int
+            Returns the number of rows in the ``x`` matrix.
+        m: int
+            Returns the length of each row in the ``x`` matrix.
+        d_count: int
+            Returns the number of daemons in the task.
+        d_lengths: np.ndarray[tuple[int] np.dtype[np.int64]]
+            Returns the lengths of daemons after 'stripping from padding with ``HexSymbol.S_STOP``'.
+        unused_cell_reward: np.float64
+            Calculates the reward per unused buffer slot.
 
     """
 
