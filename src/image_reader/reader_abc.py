@@ -1,4 +1,6 @@
-from typing import Any, Protocol  # TODO: Remove Any
+from typing import Protocol
+
+from core import SoftTask
 
 from .image_loader import ColoredImage
 
@@ -6,4 +8,4 @@ from .image_loader import ColoredImage
 class ImageReader[ReaderConfig](Protocol):
     def __init__(self, config: ReaderConfig | None = None) -> None: ...
 
-    def read(self, image: ColoredImage) -> Any: ...
+    def read(self, image: ColoredImage) -> SoftTask: ...

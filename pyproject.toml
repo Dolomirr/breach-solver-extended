@@ -13,5 +13,5 @@ dependencies = [
 [dependency-groups]
 dev = [
     "icecream>=2.1.5",
-    "matplotlib>=3.10.3",
+    "matplotlib>=3.10.3",   # opencv dep
 ]

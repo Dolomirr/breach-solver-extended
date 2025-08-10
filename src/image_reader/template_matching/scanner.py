@@ -1,7 +1,7 @@
 import logging
 from pathlib import Path
 
-from core import setup_logging
+from core import SoftTask, setup_logging
 
 from ..image_loader import ColoredImage
 from ..reader_abc import ImageReader
@@ -29,7 +29,7 @@ class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
 
         log.debug("Initializing ScannerTemplates", extra={"config": config})
 
-    def read(self, image: ColoredImage):
+    def read(self, image: ColoredImage) -> SoftTask:
         self.images = Images(image)
         self.img_manager.set_base(self.images)
         (
@@ -72,9 +72,8 @@ class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
             self.templates.buffer,
         )
 
-        #! TODO: temporary task class
-        return (
-            [[cell.label for cell in row] for row in self.grouper.matches_matrix],
-            [[cell.label for cell in row] for row in self.grouper.matches_daemons],
-            len(buffer_matches),
+        return SoftTask(
+            matrix=[[cell.label for cell in row] for row in self.grouper.matches_matrix],
+            daemons=[[cell.label for cell in row] for row in self.grouper.matches_daemons],
+            buffer_size=len(buffer_matches),
         )

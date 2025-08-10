@@ -11,6 +11,7 @@ from .base_setup import (
 from .logging_config import setup_logging
 from .structs import (
     NoSolution,
+    SoftTask,
     Solution,
     SolverResult,
     Task,
@@ -22,6 +23,7 @@ __all__ = [
     "PROJECT_ROOT",
     "HexSymbol",
     "NoSolution",
+    "SoftTask",
     "Solution",
     "SolverResult",
     "Task",
