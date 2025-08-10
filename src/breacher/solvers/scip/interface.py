@@ -70,7 +70,7 @@ class ScipSolver(Solver[ScipConfig]):
                 f"SCIP model build time: {build_time:.6f}, optimization time: {opt_time:.6f}",
                 flush=True,
             )
-        log.info("Scip Finished solving.", extra={'build_tim': build_time, 'opt_time': opt_time})
+        log.info("Scip Finished solving.", extra={'build_time': build_time, 'opt_time': opt_time})
 
         x_path = self.extractor.path
         buffer_nums = self.extractor.buffer_nums
