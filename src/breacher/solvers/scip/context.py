@@ -88,6 +88,9 @@ class TaskContext:
         Reward per unused buffer slot,
         calculated in a way to ensure that activating any new daemon is more rewarding than preserving buffer.
         """
-        rewards_per_symbol = self.daemons_costs / self.d_lengths
+        try:
+            rewards_per_symbol = self.daemons_costs / self.d_lengths
+        except (RuntimeWarning, ZeroDivisionError):
+            return np.float64(0.0)
         return 0.1 * rewards_per_symbol.min()
 

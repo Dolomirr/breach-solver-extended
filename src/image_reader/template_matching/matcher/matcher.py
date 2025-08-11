@@ -37,8 +37,8 @@ class TemplateMatcher:
                     score = float(res[y, x])
                     raw.append((x, y, w, h, score, label, idx))
 
-        # TODO: error?
         if not raw:
+            log.warning('No matches found. Returning empty list.')
             return []
 
         boxes = np.array([entry[:4] for entry in raw])  # (x, y, w, h)

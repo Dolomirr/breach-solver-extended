@@ -56,7 +56,7 @@ class Task:
             msg.append(
                 f"demons and daemons_costs must have the same length, given: {self.daemons.shape[0]}, {self.daemons_costs.shape[0]}",
             )
-        if not (np.issubdtype(self.buffer_size, np.int8) and self.buffer_size > 0):
+        if not (np.issubdtype(self.buffer_size, np.int8) and self.buffer_size >= 0):
             msg.append(
                 f"buffer size must be np.int8 and non-negative, given: {type(self.buffer_size)}, {self.buffer_size}",
             )

@@ -59,7 +59,7 @@ class SoftTask:
             msgs.append("each row in daemons must be a list")
         if any(None in row for row in daemons):
             msgs.append("daemons cannot contain None values")
-        if not isinstance(buffer_size, int) or buffer_size < 0:
+        if not (isinstance(buffer_size, int) and buffer_size >= 0):
             msgs.append(f"buffer_size must be a non-negative integer, given: {buffer_size}")
 
         if costs is not None:
@@ -89,6 +89,7 @@ class SoftTask:
         self._costs = [len(row) for row in self._daemons]
         return self
 
+    # TODO: handle empty cells in the middle + mapping from string
     def make_hard(self) -> Task:  # 0_o
         """
         Converts self to frozen ``Task``.

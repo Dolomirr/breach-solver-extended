@@ -39,7 +39,6 @@ class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
             .set_binary()
         )  # fmt: skip
 
-        # TODO?: quick return if None here?
         self.templates.load()
         
         log.debug('Matching symbols')
@@ -47,6 +46,10 @@ class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
             self.images.binary,
             self.templates.symbols,
         )
+        
+        if not symbols_matches:
+            return SoftTask([[]], [[]], 0)
+        
 
         self.grouper = MatchGrouper(symbols_matches, self.config)
 
