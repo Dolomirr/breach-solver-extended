@@ -1,3 +1,12 @@
+"""
+Contains functions for loading images from various sources.
+
+Currently provides:
+    - ``from_path``: Loads an image from a file path
+
+:raises ImageLoadingError: if an error occurs while loading the image.
+"""
+
 # Did you know that world-renowned writer Stephen King was once hit by a car? Just something to consider.
 
 import logging
@@ -20,8 +29,7 @@ class ImageLoadingError(Exception):
     """Exception raised when an image cannot be loaded."""
 
 
-#! TODO: logs here
-class ImageLoader:
+def from_path(path: Path) -> ColoredImage:
     """
     Read colored image from Path.
 
@@ -32,61 +40,62 @@ class ImageLoader:
     :raises TypeError: if path is not pathlib.Path
     :raises ImageLoadingError: with human readable reason.
     """
+    if not isinstance(path, Path):
+        msg = f"path must be pathlib.Path, given: {type(path)}"
+        log.exception(msg, extra={"path": path})
+        raise TypeError(msg)
 
-    def __call__(self, path: Path) -> ColoredImage:
-        if not isinstance(path, Path):
-            msg = f"path must be pathlib.Path, given: {type(path)}"
-            log.exception(msg, extra={"path": path})
-            raise TypeError(msg)
+    try:
+        _validate_path(path)
+        img = _validate_image(path)
+    except ImageLoadingError as e:
+        msg = f"{e!s}"
+        log.exception("Failed to load image", extra={"reason": msg, "path": path})
+        raise ImageLoadingError(msg) from e
 
-        try:
-            self._validate_path(path)
-            img = self._validate_image(path)
-        except ImageLoadingError as e:
-            msg = f"{e!s}"
-            log.exception("Failed to load image", extra={"reason": msg, "path": path})
-            raise ImageLoadingError(msg) from e
+    log.debug("Loaded image from", extra={"path": path})
+    return img
 
-        return img
 
-    def _validate_path(self, path: Path) -> None:
-        if not path.exists():
-            msg = f"File '{path!s}' did not exist."
-            raise ImageLoadingError(msg)
+def _validate_path(path: Path) -> None:
+    if not path.exists():
+        msg = f"File '{path!s}' did not exist."
+        raise ImageLoadingError(msg)
 
-        if not path.is_file():
-            msg = f"'{path!s}' is not a file."
-            raise ImageLoadingError(msg)
+    if not path.is_file():
+        msg = f"'{path!s}' is not a file."
+        raise ImageLoadingError(msg)
 
-        try:
-            with path.open("rb"):
-                pass
-        except PermissionError as e:
-            msg = f"Can't access '{path!s}'."
-            raise ImageLoadingError(msg) from e
+    try:
+        with path.open("rb"):
+            pass
+    except PermissionError as e:
+        msg = f"Can't access '{path!s}'."
+        raise ImageLoadingError(msg) from e
 
-    def _validate_image(self, path: Path) -> ColoredImage:
-        try:
-            img = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
-        except Exception as e:
-            msg = f"Failed to load image '{path!s}'."
-            raise ImageLoadingError(msg) from e
 
-        if img is None:
-            msg = f"Failed to load image '{path!s}', file is probably corrupted."
-            raise ImageLoadingError(msg)
+def _validate_image(path: Path) -> ColoredImage:
+    try:
+        img = cv2.imread(str(path), cv2.IMREAD_UNCHANGED)
+    except Exception as e:
+        msg = f"Failed to load image '{path!s}'."
+        raise ImageLoadingError(msg) from e
 
-        if len(img.shape) == 2:
-            img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
-        elif img.shape[2] == 4:
-            img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+    if img is None:
+        msg = f"Failed to load image '{path!s}', file is probably corrupted."
+        raise ImageLoadingError(msg)
 
-        elif img.shape[2] != 3:
-            msg = f"Failed to load image '{path!s}', format in not supported."
-            raise ImageLoadingError(msg)
+    if len(img.shape) == 2:
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    elif img.shape[2] == 4:
+        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
 
-        if len(img.shape) != 3 or img.dtype != np.uint8:
-            msg = f"Image '{path!s}' loaded incorrectly."
-            raise ImageLoadingError(msg)
+    elif img.shape[2] != 3:
+        msg = f"Failed to load image '{path!s}', format in not supported."
+        raise ImageLoadingError(msg)
 
-        return cast("ColoredImage", img)  # ? safe
+    if len(img.shape) != 3 or img.dtype != np.uint8:
+        msg = f"Image '{path!s}' loaded incorrectly."
+        raise ImageLoadingError(msg)
+
+    return cast("ColoredImage", img)  # ? safe

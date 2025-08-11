@@ -1,10 +1,11 @@
 # src/image_reader/__init__.py
 
-from .image_loader import ImageLoader
+from .image_loader import ImageLoadingError, from_path
 from .template_matching import ScannerTemplates, TemplateProcessingConfig
 
 __all__ = [
-    "ImageLoader",
+    "ImageLoadingError",
     "ScannerTemplates",
     "TemplateProcessingConfig",
+    "from_path",
 ]
