@@ -26,14 +26,14 @@ class OptimizationError(Exception):
 
 
 class Solver[SolverConfigType](ABC):
-    def __call__(self, task: Task, config: SolverConfigType) -> tuple[SolverResult, float]:
+    def __call__(self, task: Task, config: SolverConfigType | None = None) -> tuple[SolverResult, float]:
         """
         Shortcut for ``solver.solve()``
         """
         return self.solve(task, config)
 
     @abstractmethod
-    def solve(self, task: Task, config: SolverConfigType) -> tuple[SolverResult, float]:
+    def solve(self, task: Task, config: SolverConfigType | None = None) -> tuple[SolverResult, float]:
         """
         ``Solver.solve()`` is main method to solve task.
         supports ``.__call__()`` shortcuts to this method, look __doc__ of subclass ``.solve()`` method.
@@ -52,7 +52,7 @@ class SeedableSolver(Solver, ABC):
         ...
 
 
-SolverType = TypeVar('SolverType', bound=Solver)
+SolverType = TypeVar("SolverType", bound=Solver)
 
 
 def register_solver(*codes: SolverCode) -> Callable[[type[SolverType]], type[SolverType]]:
@@ -60,4 +60,5 @@ def register_solver(*codes: SolverCode) -> Callable[[type[SolverType]], type[Sol
         for code in codes:
             existing_solvers[code] = cls
         return cls
+
     return decorator

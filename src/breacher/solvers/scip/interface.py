@@ -17,7 +17,7 @@ log = logging.getLogger(__name__)
 class ScipSolver(Solver[ScipConfig]):
     """SCIP solver"""
 
-    def solve(self, task: Task, config: ScipConfig) -> tuple[SolverResult, float]:
+    def solve(self, task: Task, config: ScipConfig| None = None) -> tuple[SolverResult, float]:
         """
         Linear programming solver.
 
@@ -33,6 +33,9 @@ class ScipSolver(Solver[ScipConfig]):
         :return: ``tuple: (Solution, execution_time``),
             or if no solution found ``tuple: (NoSolution, -1.0)``.
         """
+        if not config:
+            config = ScipConfig()
+        
         self.context = TaskContext(task, config)
         self.runner = ModelRunner(self.context)
         self.extractor = ResultExtractor(self.context)
