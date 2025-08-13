@@ -379,3 +379,7 @@ class MatchGrouper:
 
         log.debug('Located buffer bounds.', extra={'vert_bound': gap_filtered, 'hor_bound': upper_filtered })
         return gap_filtered, upper_filtered
+    
+    @staticmethod
+    def extract_labels(matches: list[list[Match]]):
+        return [[cell.label for cell in row] for row in matches]

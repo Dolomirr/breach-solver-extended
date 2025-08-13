@@ -1,12 +1,11 @@
 import logging
-from pathlib import Path
 
 from core import SoftTask, setup_logging
 
 from ..image_loader import ColoredImage
 from ..reader_abc import ImageReader
 from .match_grouper import MatchGrouper
-from .matcher import TemplateMatcher
+from .matcher import Match, TemplateMatcher
 from .preprocessor import ImageProcessor
 from .structs import Images, TemplateProcessingConfig
 from .template_loader import TemplateLoader
@@ -40,16 +39,15 @@ class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
         )  # fmt: skip
 
         self.templates.load()
-        
-        log.debug('Matching symbols')
+
+        log.debug("Matching symbols")
         symbols_matches = self.matcher.match(
             self.images.binary,
             self.templates.symbols,
         )
-        
+
         if not symbols_matches:
             return SoftTask([[]], [[]], 0)
-        
 
         self.grouper = MatchGrouper(symbols_matches, self.config)
 
@@ -61,22 +59,23 @@ class ScannerTemplates(ImageReader[TemplateProcessingConfig]):
             .structure_daemons()
         )  # fmt: skip
 
+        # this cut needed for better dynamic threshold applying on buffer cells
+        # that ensures correct matching on wider range of screens brightnesses
         buffer_vert_bound, buffer_hor_bound = self.grouper.find_buffer_bounds()
-
         (
             self.img_manager
             .set_buffer(buffer_vert_bound, buffer_hor_bound)
             .set_buffer_binary()
         )  # fmt: skip
 
-        log.debug('Matched buffer')
+        log.debug("Matched buffer")
         buffer_matches = self.matcher.match(
             self.images.buffer_binary,
             self.templates.buffer,
         )
 
         return SoftTask(
-            matrix=[[cell.label for cell in row] for row in self.grouper.matches_matrix],
-            daemons=[[cell.label for cell in row] for row in self.grouper.matches_daemons],
+            matrix=MatchGrouper.extract_labels(self.grouper.matches_matrix),
+            daemons=MatchGrouper.extract_labels(self.grouper.matches_daemons),
             buffer_size=len(buffer_matches),
         )

@@ -1,11 +1,11 @@
-import functools
 import logging
 from dataclasses import dataclass
 from typing import Self
 
 import numpy as np
 
-from core import setup_logging
+from core import mapper_to_int, setup_logging
+from core.base_setup import HEX_DISPLAY_MAP, HexSymbol
 
 from .task import Task
 
@@ -89,15 +89,33 @@ class SoftTask:
         self._costs = [len(row) for row in self._daemons]
         return self
 
-    # TODO: handle empty cells in the middle + mapping from string
+    @property
+    def _padded_daemons(self) -> list[list[str]]:
+        max_len = max(len(row) for row in self._daemons)
+        pad_str = HEX_DISPLAY_MAP[HexSymbol.S_STOP]
+        daemons = []
+        for sequence in self._daemons:
+            row = sequence.copy()
+            cur_len = len(row)
+            if cur_len < max_len:
+                row.extend([pad_str] * (max_len - cur_len))
+            daemons.append(row)
+        return daemons
+
     def make_hard(self) -> Task:  # 0_o
         """
         Converts self to frozen ``Task``.
         """
         try:
             task = Task(
-                matrix=np.array(self._matrix, dtype=np.int8),
-                daemons=np.array(self._daemons, dtype=np.int8),
+                matrix=np.array(
+                    [[mapper_to_int(cell) for cell in row] for row in self._matrix],
+                    dtype=np.int8,
+                ),
+                daemons=np.array(
+                    [[mapper_to_int(cell) for cell in row] for row in self._padded_daemons],
+                    dtype=np.int8,
+                ),
                 daemons_costs=np.array(self._costs, dtype=np.int8),
                 buffer_size=np.int8(self._buffer_size),
             )
@@ -107,5 +125,3 @@ class SoftTask:
             raise ValueError(msg) from e
 
         return task
-    
-    
