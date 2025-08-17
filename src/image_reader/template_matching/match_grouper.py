@@ -7,7 +7,7 @@ import numpy as np
 
 from core import setup_logging
 
-from .matcher import Match
+from .matcher import Match, NullMatch
 from .structs import TemplateProcessingConfig
 
 setup_logging()
@@ -22,7 +22,7 @@ class MatchGrouper:
     matches: list[Match]
     _matches_matrix_flat: list[Match]
     _matches_daemons_flat: list[Match]
-    matches_matrix: list[list[Match]]
+    matches_matrix: list[list[Match | NullMatch]]
     matches_daemons: list[list[Match]]
 
     def __init__(self, matches: list[Match], config: TemplateProcessingConfig) -> None:
@@ -104,7 +104,8 @@ class MatchGrouper:
     def _get_centers(self, matches: list[Match]) -> tuple[Array1DIndices, Array1DIndices]:
         """
         Extract sorted, unique x and y center coordinates from a list of Match objects.
-        Uniqueness is treated as 'centers are separated by at least half the bbox size on one of axis'
+        Uniqueness is treated as 'centers are separated by at least half the bbox size on one of axis'.
+        Ignores NullMatches (coordinates that lower then 0).
 
         :returns: tuple[np.ndarray, np.ndarray]
             xs: np.ndarray of unique x-centers (sorted).
@@ -233,7 +234,7 @@ class MatchGrouper:
         col_centers = [np.median(cluster).astype(np.int64) for cluster in col_clusters]
         col_centers.sort()
 
-        grid: list[list[Match | None]] = [[None] * len(col_centers) for _ in range(len(row_centers))]
+        grid: list[list[Match | NullMatch]] = [[NullMatch.getin()] * len(col_centers) for _ in range(len(row_centers))]
         for sym_match in self._matches_matrix_flat:
             min_col_dist = np.inf
             best_col_idx = -1
@@ -253,7 +254,7 @@ class MatchGrouper:
 
             if min_row_dist <= tolerance and min_col_dist <= tolerance:
                 existing_match = grid[best_row_idx][best_col_idx]
-                if existing_match is None:
+                if existing_match is NullMatch.getin():
                     grid[best_row_idx][best_col_idx] = sym_match
                 else:
                     current_center = (col_centers[best_col_idx], row_centers[best_row_idx])
@@ -266,12 +267,17 @@ class MatchGrouper:
                     if dist_current > dist_real:
                         grid[best_row_idx][best_col_idx] = sym_match
 
-        if any(None in row for row in grid) is None:
+        if any(NullMatch.getin() in row for row in grid):
             msg = "Some of grid cell was not replaced."
-            log.exception(msg)
+            log.debug(msg)
+            log.debug(grid)
+        
+        if any(None in row for row in grid):
+            msg = "Some of grid cell are 'None'."
+            log.error(msg)
             raise RuntimeError(msg)
 
-        self.matches_matrix = cast("list[list[Match]]", grid)
+        self.matches_matrix = cast("list[list[Match | NullMatch]]", grid)
         log.debug(
             "Structured/filtering on matrix",
             extra={
@@ -377,9 +383,9 @@ class MatchGrouper:
         gap_filtered = self._find_gaps(centers_filtered_x)[0]
         upper_filtered = max(m.center.cy for m in matches_after_filtering)
 
-        log.debug('Located buffer bounds.', extra={'vert_bound': gap_filtered, 'hor_bound': upper_filtered })
+        log.debug("Located buffer bounds.", extra={"vert_bound": gap_filtered, "hor_bound": upper_filtered})
         return gap_filtered, upper_filtered
-    
+
     @staticmethod
     def extract_labels(matches: list[list[Match]]):
         return [[cell.label for cell in row] for row in matches]
