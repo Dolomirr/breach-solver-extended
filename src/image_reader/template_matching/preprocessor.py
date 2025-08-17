@@ -6,7 +6,7 @@ import numpy as np
 
 from core import setup_logging
 
-from ..image_loader import ColoredImage, GrayScaleImage
+from ..image_loader import GrayScaleImage
 from .structs import Images, TemplateProcessingConfig
 
 setup_logging()

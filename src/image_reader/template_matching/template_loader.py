@@ -25,25 +25,22 @@ class TemplateLoader:
     additional: TemplateDict[AdditionalTemplate]
     """Currently unused, maybe add something later"""
 
-    # TODO: log here
     def __init__(self, config: TemplateProcessingConfig, subdir: str = "templates") -> None:
         self.config = config
 
         folder = Path(__file__).parent / subdir
-        
+
         if not folder.exists():
             msg = f"Templates directory is not found: {folder}"
             log.exception(msg)
             raise FileNotFoundError(msg)
         self.folder = folder
-        
-
 
     def load(self) -> None:
         templates: TemplateDict[SymbolTemplate] = {}
         buffer_templates: TemplateDict[BufferTemplate] = {}
 
-        # currently unused, just in case of need to add new symbols.
+        # currently unused, just in case of need to add new non-standard symbols.
         additional_templates: TemplateDict[AdditionalTemplate] = {}
 
         buffer_template_found = False
@@ -59,7 +56,7 @@ class TemplateLoader:
                     buffer_template_found = True
                 except Exception as e:
                     msg = "Error loading template, some templates may be corrupted."
-                    log.exception(msg, extra={'on': 'BUFFER'})
+                    log.exception(msg, extra={"on": "BUFFER"})
                     raise RuntimeError(msg) from e
 
             elif label in self.config.EXISTING_TEMPLATES:
@@ -69,7 +66,7 @@ class TemplateLoader:
                     templates[label] = cast("tuple[SymbolTemplate, ...]", tmpls)
                 except Exception as e:
                     msg = "Error loading template, some templates may be corrupted."
-                    log.exception(msg, extra={'on': 'TEMPLATES'})
+                    log.exception(msg, extra={"on": "TEMPLATES"})
                     raise RuntimeError(msg) from e
 
             else:
@@ -79,23 +76,22 @@ class TemplateLoader:
                     additional_templates[label] = cast("tuple[SymbolTemplate, ...]", tmpls)
                 except Exception as e:
                     msg = "Error loading template, some templates may be corrupted."
-                    log.exception(msg, extra={'on': 'EXTRA'})
+                    log.exception(msg, extra={"on": "EXTRA"})
                     raise RuntimeError(msg) from e
 
         if not buffer_template_found:
-            # buffer_file = folder / f"{self.config.BUFFER_TEMPLATES}.npz"
             msg = "Buffer templates are corrupted or missing."
             log.exception(msg)
             raise FileNotFoundError(msg)
 
         if len(templates) != len(self.config.EXISTING_TEMPLATES):
-            print('TEMPLATES')
+            print("TEMPLATES")
             missing = set(self.config.EXISTING_TEMPLATES) - set(templates.keys())
             msg = "Some templates are corrupted or missing."
-            log.exception(msg, extra={'missing': missing})
+            log.exception(msg, extra={"missing": missing})
             raise FileNotFoundError(msg)
 
         self.symbols = templates
         self.buffer = buffer_templates
         self.additional = additional_templates
-        log.info('Successfully loaded templates')
+        log.info("Successfully loaded templates")

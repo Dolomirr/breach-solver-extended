@@ -79,26 +79,22 @@ class Match:
 # to make it aware of undetected symbols in grid
 @dataclass(frozen=True)
 class NullMatch(Match):
-    label:str = HEX_DISPLAY_MAP[HexSymbol.S_BLANK]
+    label: str = HEX_DISPLAY_MAP[HexSymbol.S_BLANK]
     template_idx: int = -1
     score: float = -1.0
     bbox: BBox = BBox(-1, -1, -1, -1)  # noqa: RUF009 not an issue, designed as lazy singleton
     center: Center = Center(-1, -1)  # noqa: RUF009
-    
+
     _instances: Self | None = None
-    
+
     @classmethod
     def getin(cls) -> Self:
         if cls._instances is None:
             cls._instances = cls()
         return cls._instances
-    
+
     def __str__(self) -> str:
         return "NullMatch()"
-    
+
     def __repr__(self) -> str:
         return "NullMatch()"
-            
-        
-
-

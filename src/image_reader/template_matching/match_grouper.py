@@ -1,7 +1,6 @@
 import logging
-from ast import Raise
 from collections import defaultdict, deque
-from typing import Literal, Self, cast
+from typing import Self, cast
 
 import numpy as np
 
@@ -271,10 +270,10 @@ class MatchGrouper:
             msg = "Some of grid cell was not replaced."
             log.debug(msg)
             log.debug(grid)
-        
+
         if any(None in row for row in grid):
             msg = "Some of grid cell are 'None'."
-            log.error(msg)
+            log.exception(msg)
             raise RuntimeError(msg)
 
         self.matches_matrix = cast("list[list[Match | NullMatch]]", grid)

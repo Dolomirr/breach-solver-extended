@@ -67,7 +67,7 @@ class Images:
     def _validate_image_type(self, img: np.ndarray, atrname: str, exp_channels: int) -> None:
         """
         Ensure image has correct dtype and channel count.
-        
+
         :param img: Candidate to be validated.
         :param atrname: Name of attribute to display in error message.
         :param exp_channels: Expected number of color channels (1 for GrayScaleImage or 3 for ColoredImage)
