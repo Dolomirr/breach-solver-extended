@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from image_reader.image_loader import ColoredImage, GrayScaleImage
+from reader.image_loader import ColoredImage, GrayScaleImage
 
 
 # TODO: make descriptor for attributes

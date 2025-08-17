@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 
 from core import setup_logging
-from image_reader.image_loader import GrayScaleImage
+from reader.image_loader import GrayScaleImage
 
 from ..structs import Images, TemplateProcessingConfig
 from ..template_loader import AdditionalTemplate, BufferTemplate, SymbolTemplate, TemplateDict
