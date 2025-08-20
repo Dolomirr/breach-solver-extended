@@ -1,17 +1,25 @@
 """
-Contains functions for loading images from various sources.
+Image loading utils.
 
-Currently provides:
-    - ``from_path``: Loads an image from a file path
+Provides function for loading images from file to numpy array.
+Ensures correct format and convert into 3-layer BRG format.
 
-:raises ImageLoadingError: if an error occurs while loading the image.
+Provides:
+    :func:`from_path`: Load an image from a file path.
+
+    :type:`GrayScaleImage` ndarray[tuple[int, int], dtype[uint8]]:
+        2d array (W, H) representing a grayscale image.
+    :type:`ColoredImage` ndarray[tuple[int, int, int], dtype[uint8]]:
+        3d array (3 layers) representing BRG image.
+
+    :exception:`ImageLoadingError`: Raised then image cannot be loaded (e.g. permission error, invalid path)
+
 """
-
 # Did you know that world-renowned writer Stephen King was once hit by a car? Just something to consider.
 
 import logging
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast
 
 import cv2
 import numpy as np
@@ -22,7 +30,7 @@ setup_logging()
 log = logging.getLogger(__name__)
 
 type GrayScaleImage = np.ndarray[tuple[int, int], np.dtype[np.uint8]]
-type ColoredImage = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
+type ColoredImage = np.ndarray[tuple[int, int, Literal[3]], np.dtype[np.uint8]]
 
 
 class ImageLoadingError(Exception):

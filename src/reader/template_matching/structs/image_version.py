@@ -11,32 +11,26 @@ class Images:
     """
     Holds all versions of image used in template matching.
 
-    Order of pressing goes as follows in Attributes section.
+    Ensures version will be accessed in correct order.
+    Order of processing goes as follows in Attributes section.
 
     .. seealso::
-        ``image_reader.template_matching.file_reader.ImageReader``
+        ``reader.template_matching.file_reader.ImageReader``
 
-    Type aliases:
-        - ColoredImage: ndarray[tuple[int, int, int], dtype[uint8]]
+    Type aliases (borrowed from ``reader.image_loader``):
+        - ColoredImage: ndarray[tuple[int, int, int], dtype[uint8]]raw
         - GrayScaleImage: ndarray[tuple[int, int], dtype[uint8]]
 
 
-    Attributes
-    ----------
-        raw: ColoredImage
-            loaded from file.
-        sized: ColoredImage
-            resized to suited proportions.
-        gray: GrayScaleImage
-            converted to grayscale.
-        binary: GrayScaleImage
-            binarized to {0, 1}.
-        buffer_cut: GrayScaleImage
-            buffer section cut out from gray-scaled
-        buffer_binary: GrayScaleImage
-            buffer section binarized to {0, 1} (with dynamic thresholding).
+    Attributes:
+        raw (ColoredImage): loaded from file.
+        sized (ColoredImage): resized to suited proportions.
+        gray (GrayScaleImage): converted to grayscale.
+        binary (GrayScaleImage): binarized to {0, 1}.
+        buffer_cut (GrayScaleImage): buffer section cut out from gray-scaled
+        buffer_binary (GrayScaleImage): buffer section binarized to {0, 1} (with dynamic thresholding).
 
-    :param _raw: first version loaded with ``ImageReader()``
+    :param _RAW: first version loaded with ``ImageReader()``
     :raises RuntimeError: if some attribute is accessed before being set.
     :raises TypeError, ValueError: if some attribute is set with wrong type.
 

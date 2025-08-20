@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict, deque
-from typing import Self, cast
+from typing import Literal, Self, cast
 
 import numpy as np
 
@@ -16,6 +16,25 @@ type Array1DIndices = np.ndarray[tuple[int], np.dtype[np.integer]]
 
 
 class MatchGrouper:
+    """
+    Group and structure Match objects based on their spatial relationships.
+
+    Attributes:
+        config (TemplateProcessingConfig): Configuration settings for clustering.
+        matches (list[Match]): List of all Match objects.
+        matches_matrix (list[list[Match | NullMatch]]): Structured 2D list of Match objects for the matrix.
+        matches_daemons (list[list[Match]]): Structured 2D list of Match objects for the daemons.
+
+    Methods:
+        filter_unclustered: Filter out Matches that are to far away from main clusters.
+        set_splitted: Splits list of Matches into two groups between matrix and daemons based on their x-axis center coordinates.
+        structure_matrix: Structure matches in the matrix according to real 'matrix' structure.
+        structure_daemons: Structure matches in the daemons according to real 'sequences' structure.
+        find_buffer_bounds: Find buffer bounds for the structured Match objects.
+        extract_labels: Extract labels from a 2D list of Match objects.
+
+    """
+
     config: TemplateProcessingConfig
 
     matches: list[Match]
@@ -35,13 +54,10 @@ class MatchGrouper:
         Intended to filter random matches that are too far from any other point. Result,
         however, require further filtering by structure (matrix/daemons rows and columns)
 
-        :param matches: unfiltered Matches.
-        :param eps: maximum distance between points in same cluster.
-            Default: if none calculated as average size of bbox (32 in case of hex symbols).
-        :param eps_factor: multiplier of epsilon (before squaring).
-            Default: 2.8284 (~= 2 * sqrt(2)).
-        :param min_samples: minimum cluster population.
-        :returns: filtered list of Match belonging to clusters.
+        Uses:
+            :attr:`config.CLUSTERING_EPS` if set
+            :attr:`config.CLUSTERING_EPS_FACTOR` overwise to determine epsilon for clustering.
+            :attr:`config.CLUSTERING_MIN_SAMPLES` as minimal population of single cluster.
         """
         len_before = len(self.matches)
 
@@ -52,11 +68,11 @@ class MatchGrouper:
                 ** 2  # square to avoid root lately
         )  # fmt: skip
 
-        points = np.array([m.center for m in self.matches])
+        points: np.ndarray[tuple[int, ...], np.dtype[np.int64]] = np.array([m.center for m in self.matches])
         n_points = points.shape[0]
 
         # distance matrix
-        diff = points[:, np.newaxis] - points[np.newaxis, :]
+        diff: np.ndarray[tuple[int, ...], np.dtype[np.int64]] = points[:, np.newaxis] - points[np.newaxis, :]
         sq_dist = np.sum(diff**2, axis=-1)
 
         neighbors = []
@@ -149,10 +165,8 @@ class MatchGrouper:
         """
         Finds midpoints of gaps in a sorted array of 1d points.
 
-        Can detect gaps either by threshold applied to distance between points or by finding top `n` largest gaps.
-
         :param centers: 1d sorted array of either x coordinates or y coordinates
-        :return: array of midpoints of found gaps sorted from decreasingly,  return empty array.
+        :return: array of midpoints of found gaps sorted decreasingly, if to less points to calculate gaps - return empty array.
         """
         diffs = np.diff(centers)
 
@@ -174,8 +188,6 @@ class MatchGrouper:
         Split the list of Match objects into two groups:
             - matches where center on x axis is strictly less than split_x (matrix)
             - matches where center x is greater than or equal to split_x (daemons)
-
-        :param matches: list of Match objects
         """
         centers_x, _ = self._get_centers(self.matches)
         split_x = self._find_gaps(centers_x)[0]
@@ -233,7 +245,7 @@ class MatchGrouper:
         col_centers = [np.median(cluster).astype(np.int64) for cluster in col_clusters]
         col_centers.sort()
 
-        grid: list[list[Match | NullMatch]] = [[NullMatch.getin()] * len(col_centers) for _ in range(len(row_centers))]
+        grid: list[list[Match | NullMatch]] = [[NullMatch.instance()] * len(col_centers) for _ in range(len(row_centers))]
         for sym_match in self._matches_matrix_flat:
             min_col_dist = np.inf
             best_col_idx = -1
@@ -253,7 +265,7 @@ class MatchGrouper:
 
             if min_row_dist <= tolerance and min_col_dist <= tolerance:
                 existing_match = grid[best_row_idx][best_col_idx]
-                if existing_match is NullMatch.getin():
+                if existing_match is NullMatch.instance():
                     grid[best_row_idx][best_col_idx] = sym_match
                 else:
                     current_center = (col_centers[best_col_idx], row_centers[best_row_idx])
@@ -266,7 +278,7 @@ class MatchGrouper:
                     if dist_current > dist_real:
                         grid[best_row_idx][best_col_idx] = sym_match
 
-        if any(NullMatch.getin() in row for row in grid):
+        if any(NullMatch.instance() in row for row in grid):
             msg = "Some of grid cell was not replaced."
             log.debug(msg)
             log.debug(grid)
@@ -372,6 +384,11 @@ class MatchGrouper:
         return self
 
     def find_buffer_bounds(self) -> tuple[int, int]:
+        """
+        Based on filtered and structured matches finds bound of region where buffer cells are located.
+        
+        :returns: coordinates of vertical bound, and coordinates of horizontal bound.
+        """
         matches_after_filtering = [
             item for sublist
                 in (self.matches_matrix + self.matches_daemons)

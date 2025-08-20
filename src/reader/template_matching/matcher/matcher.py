@@ -15,6 +15,17 @@ log = logging.getLogger(__name__)
 
 
 class TemplateMatcher:
+    """
+    Matches templates within an image.
+    
+    Methods:
+        match: Matches templates against a given grayscale image and returns a list of matches.
+
+    :param config:
+    :type config: TemplateProcessingConfig
+
+    """
+    
     def __init__(self, config: TemplateProcessingConfig) -> None:
         self.config = config
 
@@ -23,6 +34,16 @@ class TemplateMatcher:
         image: GrayScaleImage,
         templates: TemplateDict[SymbolTemplate | BufferTemplate | AdditionalTemplate],
     ) -> list[Match]:
+        """
+        Performs template matching on a given grayscale image against a set of templates.
+        
+        Apply non-max-suppression with very strict overlap parameter, so any cross-match should be eliminated
+        
+        :param image: grayscale image against what template matching is performed, should be binarized for better results.
+        :param templates: dict with templates can be one of ``TemplateLoader.symbols``, ``TemplateLoader.buffer`` or ``TemplateLoader.additional``.
+        :type templates: dict[str, ]
+        :returns: list of ``Match``es
+        """
         raw: list[tuple[int, int, int, int, float, str, int]] = []  # [(x, y, w, h, score, label, template_idx), ...]
         for label, tmpl_list in templates.items():
             for idx, tmpl in enumerate(tmpl_list):

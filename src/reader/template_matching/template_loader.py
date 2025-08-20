@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal, Self, cast
 
 import numpy as np
 
@@ -12,18 +12,47 @@ from .structs import TemplateProcessingConfig
 setup_logging()
 log = logging.getLogger(__name__)
 
-type SymbolTemplate = np.ndarray[tuple[Literal[32], Literal[32]], np.dtype[np.uint8]]
-type BufferTemplate = np.ndarray[tuple[Literal[40], Literal[40]], np.dtype[np.uint8]]
-type AdditionalTemplate = np.ndarray[tuple[int, int], np.dtype[np.uint8]]
+
+type Template[S] = np.ndarray[tuple[S, S], np.dtype[np.uint8]] # type: ignore generic type object/int
+type SymbolTemplate = Template[Literal[32]]
+type BufferTemplate = Template[Literal[40]]
+type AdditionalTemplate = Template[int]
 type TemplateDict[T] = Mapping[str, tuple[T, ...]]
 
 
 class TemplateLoader:
+    """
+    Responsible for loading and storing template data from `.npz` files into corresponding dictionaries.
+    
+    Attributes:
+        folder (pathlib.Path): directory in which archives are stored
+        symbols (TemplateDict[SymbolTemplate]): after loading contain a dict with tuple of loaded templates as ``numpy.array``s
+        buffer (TemplateDict[BufferTemplate]):
+        additional (TemplateDict[AdditionalTemplate]):
+    
+    Methods:
+        load: Loads template data from `.npz` files into dictionaries.
+    
+    Types:
+        Template (np.ndarray[tuple[S, S], np.dtype[np.uint8]]): grayscale, binarized image as array, where `S` is size of each template.
+        SymbolTemplate (Template[Literal[32]]):
+        BufferTemplate (Template[Literal[40]]):
+        AdditionalTemplate (Template[int]):
+        TemplateDict[T] (Mapping[str, tuple[T, ...]]): dict with label and tuple of multiple templates, where `T` is type of template.
+    
+    :param config:
+    :type config: TemplateProcessingConfig
+    :param subdir: Subdirectory where the templates are located.
+        Default: `"templates"`.
+    :type subdir: str
+
+    """
+    
     folder: Path
     symbols: TemplateDict[SymbolTemplate]
     buffer: TemplateDict[BufferTemplate]
     additional: TemplateDict[AdditionalTemplate]
-    """Currently unused, maybe add something later"""
+    """Currently unused, left for possible additional information that may be scanned with template matching."""
 
     def __init__(self, config: TemplateProcessingConfig, subdir: str = "templates") -> None:
         self.config = config
@@ -36,7 +65,26 @@ class TemplateLoader:
             raise FileNotFoundError(msg)
         self.folder = folder
 
-    def load(self) -> None:
+    def load(self) -> Self:
+        """
+        Loads templates data from `.npz` to the corresponding dictionaries.
+
+        Templates archives loaded from defined on init subdirectory.
+        Each archive contains few variants of same symbol used in Breach Protocol.
+        
+        Type od templates (label) stored in archive is decided by its name.
+            - base game symbols and dlc symbols: 1C, 55, BD, E9, 7A, FF, X9, XX, XH, IX, XR
+            - buffer cell: BUFFER_CELL
+            - additional templates: currently none, all newly added needs to be defined in ``TemplateProcessingConfig.ADDITIONAL_TEMPLATES``
+        
+        Uses:
+            :attr:`config.BUFFER_TEMPLATES`
+            :attr:`config.EXISTING_TEMPLATES`
+            :attr:`config.ADDITIONAL_TEMPLATES` if set
+        
+        :raises RuntimeError: if some error accuses during loading.
+        :raises: FileNotFoundError: if some template ise defined by missing in defined subdirectory.
+        """
         templates: TemplateDict[SymbolTemplate] = {}
         buffer_templates: TemplateDict[BufferTemplate] = {}
 
@@ -45,6 +93,7 @@ class TemplateLoader:
 
         buffer_template_found = False
 
+        # TODO!: this need to be refactored + additional templates should actually be used lmao
         for npz_path in self.folder.glob("*.npz"):
             label = npz_path.stem
 
@@ -90,8 +139,11 @@ class TemplateLoader:
             msg = "Some templates are corrupted or missing."
             log.exception(msg, extra={"missing": missing})
             raise FileNotFoundError(msg)
+        
+        # checking for additional
 
         self.symbols = templates
         self.buffer = buffer_templates
         self.additional = additional_templates
         log.info("Successfully loaded templates")
+        return self

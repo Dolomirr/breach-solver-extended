@@ -6,7 +6,7 @@ import numpy as np
 
 from core import setup_logging
 
-from ..image_loader import GrayScaleImage
+from ..image_loader import ColoredImage, GrayScaleImage
 from .structs import Images, TemplateProcessingConfig
 
 setup_logging()
@@ -14,6 +14,25 @@ log = logging.getLogger(__name__)
 
 
 class ImageProcessor:
+    """
+    Responsible for setting stages of images in ``reader.template_matching.structs.Images``
+    
+    Due to how template matching works, some stages are dependent on previous ones, and directly derived from previous version.
+    ``Images``
+    
+    Methods:
+        set_base: provide ``Images`` instance with base colored image.
+        set_resized: pads and resize base image to fit in best ration for template matching.
+        set_grayed: converts colored image to grayscale.
+        set_binary: converts grayscale image binarized image in {0, 1} values range.
+        set_buffer: cut out region with buffer cells.
+        set_buffer_binary: converts buffer region binarized image in {0, 1} values range using dynamic threshold.
+    
+    :param config:
+    :type config: TemplateProcessingConfig
+
+    """
+    
     config: TemplateProcessingConfig
     images: Images
 
@@ -38,17 +57,21 @@ class ImageProcessor:
         return cast("tuple[GrayScaleImage, GrayScaleImage]", res)
 
     def set_base(self, images: Images) -> Self:
+        """
+        Set base processed image.
+        """
         self.images = images
         return self
 
     def set_resized(self) -> Self:
         """
         Set ``Image.sized`` attribute.
-        Resize and pat image to fit within a target size while hard maintaining aspect ratio, needed for proper template matching.
+        
+        Resize and pad image to fit within a target size while hard maintaining aspect ratio, needed for proper template matching.
 
-        :param image: The input image as a NumPy array.
-        :param target_size: A tuple containing the desired width and height for the output image.
-        :return: The resized and padded image as a NumPy array.
+        Uses:
+            :attr:`config.TARGET_SIZE`
+        
         """
         target_width, target_height = self.config.TARGET_SIZE
         h, w = self.images.raw.shape[:2]
@@ -67,13 +90,14 @@ class ImageProcessor:
 
         padded[y_offset : y_offset + new_h, x_offset : x_offset + new_w] = resized
 
-        self.images.sized = padded
+        self.images.sized = cast('ColoredImage', padded)    # safe, because images.raw is guarantied to be 3-layered
         log.debug("Resized set.", extra={"target_size": self.config.TARGET_SIZE})
         return self
 
     def set_grayed(self) -> Self:
         """
         Sets the ``Image.gray`` attribute.
+        
         Convert 3 channel colored image to gray-scale one channel.
         """
         # safe, due to dtype check in image_loader.ImageReader
@@ -82,6 +106,15 @@ class ImageProcessor:
         return self
 
     def set_binary(self) -> Self:
+        """
+        Sets the ``Image.binary`` attribute.
+        
+        Binarize grayscale image to {0, 1} using global thresholding.
+
+        Uses:
+            :attr:`config.MINVAL_THRESHOLD`
+            :attr:`config.MAXVAL_THRESHOLD`
+        """
         val, img_binary = cv2.threshold(
             self.images.gray,
             self.config.MINVAL_THRESHOLD,
@@ -94,6 +127,11 @@ class ImageProcessor:
         return self
 
     def set_buffer(self, vert_bound, hor_bound) -> Self:
+        """
+        Sets the ``Image.buffer_cut`` attribute.
+        
+        Based on provided bounds cut region containing buffer.
+        """
         _, right = self._split_in(self.images.gray, vert_bound, axis=1)
         upper, _ = self._split_in(self.images.gray, hor_bound, axis=0)
 
@@ -102,6 +140,11 @@ class ImageProcessor:
         return self
 
     def set_buffer_binary(self) -> Self:
+        """
+        Sets the ``Image.buffer_binary`` attribute.
+        
+        Binarize grayscale image containing buffer cells to {0, 1} using dynamic thresholding.
+        """
         buffer_img_shape = min(self.images.buffer_cut.shape)
         thres_block_size = (
             buffer_img_shape
