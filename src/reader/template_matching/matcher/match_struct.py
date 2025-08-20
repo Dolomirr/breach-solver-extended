@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import NamedTuple, Self
+from typing import NamedTuple, Self, final
 
 from core import HEX_DISPLAY_MAP, HexSymbol
 
@@ -88,6 +88,7 @@ class Match:
 
 # This could be done with metaclass but null match really only needed for single method (MatchGrouper.structure_matrix),
 # to make it aware of undetected symbols in grid, so metaclass would be a little overkill
+@final  # just to be sure
 @dataclass(frozen=True, slots=True)
 class NullMatch(Match):
     """
@@ -146,9 +147,7 @@ class NullMatch(Match):
 
         :rtype: NullMatch
         """
-        if cls._instances is None:
-            cls._instances = cls()
-        return cls._instances
+        return cls()
 
     def __str__(self) -> str:
         return "NullMatch()"
