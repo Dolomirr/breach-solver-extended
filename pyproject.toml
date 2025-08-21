@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "numpy==2.2.6", # opencv dep
+    "matplotlib==3.10.3",   # opencv dep
     "opencv-python>=4.12.0.88",
     "pyscipopt>=5.5.0",
 ]
@@ -13,5 +14,80 @@ dependencies = [
 [dependency-groups]
 dev = [
     "icecream>=2.1.5",
-    "matplotlib>=3.10.3",   # opencv dep
+]
+
+# Ruff configs
+[tool.ruff]
+exclude = [
+    ".git",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "__pycache__",
+    "_build",
+    "build",
+    "dist",
+    "site-packages",
+    "venv",
+    ".idea",
+    "cmake-build-debug",
+    "cmake-build-release",
+    "pybind11",
+]
+
+line-length = 120   # yes, i like my lines the loooooong way
+indent-width = 4
+
+target-version = "py312"
+
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint]
+select = [
+    "ALL",
+]
+
+ignore = [
+    #### strange modules
+    "ANN",  # flake8-annotations
+    "EXE",  # flake8-executable
+    "TID",  # flake8-tidy-imports
+    "C90",  # complexity
+    "T10",  # flake8-debugger
+    "DJ",   # django
+    "T20",  # flake8-print
+
+    #### strange rules
+    "D200", "D205", "D212",         # single-line docstrings
+    "D400", "D415",                 # missing dot in the end of docstrings
+    "D401",                         # some weird crap about 'mood' of docstrings
+    "E402",                         # false positives for local imports
+    "E501",                         # line too long
+    "TRY003",                       # external messages in exceptions are too verbose
+    "TD002", "TD003",               # missing *something* in TO/DOs
+    "TD004", "FIX002",
+
+    #### missing docs
+    "D100", "D101", "D102", "D103",
+    "D104", "D105", "D106", "D107",
+
+    #### personal preferences
+    "F401",                     # unused import
+    "F403", "F405",             # wildcard imports (for quick test mainly)
+    "PGH004", "RUF100",         # noqa's
+    "Q000", "Q001",             # quotes
+    "ERA001",                   # commented out code
+    "COM819",                   # trailing comma in one-line: (1, 2, 3!,!)
+    "W293",                     # blank line with tab: (\n    \n)
+    "PLR2004",                  # magic/build-in values instead of CONSTANTS: 'if a >= 2' instead of 'if a >= A_THRESHOLD'
+    "C408",                     # prohibiting of datatypes call: dict(), list(), tuple()
+    "S311",                     # non-cryptographic-secure random generators
+    "PLR0912",                  # too many branches in function/method (just overly sensitive)
+    "PGH003",                   # ignore without specific rule
 ]
