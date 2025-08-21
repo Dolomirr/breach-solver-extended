@@ -90,4 +90,5 @@ ignore = [
     "S311",                     # non-cryptographic-secure random generators
     "PLR0912",                  # too many branches in function/method (just overly sensitive)
     "PGH003",                   # ignore without specific rule
+    "ISC003",				# "Explicit is better than implicit."
 ]
